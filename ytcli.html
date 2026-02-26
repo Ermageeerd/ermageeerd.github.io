@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Codetabs YouTube Client</title>
+<style>
+  body { font-family: sans-serif; margin: 20px; }
+  #results img { width: 160px; border-radius: 6px; }
+  .item { cursor: pointer; margin-bottom: 12px; display: flex; gap: 10px; }
+</style>
+</head>
+<body>
+
+<h2>Codetabs YouTube Client (Pure Client-Side)</h2>
+
+<input id="search" placeholder="Search YouTube…" style="width: 300px;">
+<button onclick="doSearch()">Search</button>
+
+<div id="results"></div>
+
+<hr>
+
+<iframe
+  id="player"
+  width="640"
+  height="360"
+  src=""
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen>
+</iframe>
+
+<script>
+async function doSearch() {
+  const q = document.getElementById("search").value.trim();
+  if (!q) return;
+
+  const resultsDiv = document.getElementById("results");
+  resultsDiv.innerHTML = "Loading…";
+
+  const ytURL = "https://www.youtube.com/results?search_query=" + encodeURIComponent(q);
+  const proxyURL = "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(ytURL);
+
+  let html;
+  try {
+    html = await fetch(proxyURL).then(r => r.text());
+  } catch (e) {
+    console.error(e);
+    resultsDiv.innerHTML = "Failed to fetch search results.";
+    return;
+  }
+
+  const ids = [...html.matchAll(/"videoId":"([a-zA-Z0-9_-]{11})"/g)]
+    .map(m => m[1])
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .slice(0, 10);
+
+  if (ids.length === 0) {
+    resultsDiv.innerHTML = "No videos found (or parsing failed).";
+    return;
+  }
+
+  resultsDiv.innerHTML = "<h3>Results</h3>";
+
+  for (const id of ids) {
+    let meta;
+    try {
+      meta = await fetch(
+        `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${id}&format=json`
+      ).then(r => r.json());
+    } catch {
+      continue;
+    }
+
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg">
+      <div>
+        <b>${meta.title}</b><br>
+        <small>${meta.author_name}</small>
+      </div>
+    `;
+
+    div.addEventListener("click", () => {
+      document.getElementById("player").src =
+        "https://www.youtube.com/embed/" + id + "?autoplay=1";
+    });
+
+    resultsDiv.appendChild(div);
+  }
+}
+</script>
+
+</body>
+</html>
+
