@@ -1,21 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
-
-<!--yt client, paste into https://www.w3schools.com/html/tryit.asp?filename=tryhtml_intro-->
-
-
 <meta charset="UTF-8">
 <title>ShizuTube</title>
 <style>
   body { font-family: sans-serif; margin: 20px; }
   #results img { width: 160px; border-radius: 6px; }
   .item { cursor: pointer; margin-bottom: 12px; display: flex; gap: 10px; }
+  .channel-btn {
+    margin-top: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    color: #3366ff;
+    text-decoration: underline;
+  }
 </style>
 </head>
 <body>
+
 <center>
-<img src="https://files.catbox.moe/s9dfwf.png" width=100px">
+<img src="https://files.catbox.moe/s9dfwf.png" width="100px">
 
 <input id="search" placeholder="Search ShizuTube…" style="width: 300px;">
 <button onclick="doSearch()">Search</button>
@@ -36,6 +40,7 @@
 
 <hr>
 </center>
+
 <div id="results"></div>
 
 <script>
@@ -80,13 +85,27 @@ async function doSearch() {
       continue;
     }
 
+    // CHANNEL SUPPORT: Extract channel ID from oEmbed author_url
+    let channelId = null;
+    if (meta.author_url) {
+      const channelHTML = await fetch(
+        "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(meta.author_url)
+      ).then(r => r.text()).catch(() => null);
+
+      if (channelHTML) {
+        const match = channelHTML.match(/"channelId":"(UC[0-9A-Za-z_-]+)"/);
+        if (match) channelId = match[1];
+      }
+    }
+
     const div = document.createElement("div");
     div.className = "item";
     div.innerHTML = `
       <img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg">
       <div>
         <b>${meta.title}</b><br>
-        <small>${meta.author_name}</small>
+        <small>${meta.author_name}</small><br>
+        ${channelId ? `<span class="channel-btn" onclick="viewChannel('${channelId}')">View Channel</span>` : ""}
       </div>
     `;
 
@@ -98,12 +117,60 @@ async function doSearch() {
     resultsDiv.appendChild(div);
   }
 }
+
+// CHANNEL SUPPORT: Fetch and display channel RSS feed
+async function viewChannel(channelId) {
+  const resultsDiv = document.getElementById("results");
+  resultsDiv.innerHTML = "Loading channel…";
+
+  const feedURL = "https://www.youtube.com/feeds/videos.xml?channel_id=" + channelId;
+  const proxyURL = "https://api.codetabs.com/v1/proxy?quest=" + encodeURIComponent(feedURL);
+
+  let xmlText;
+  try {
+    xmlText = await fetch(proxyURL).then(r => r.text());
+  } catch {
+    resultsDiv.innerHTML = "Failed to load channel feed.";
+    return;
+  }
+
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(xmlText, "application/xml");
+  const entries = [...xml.querySelectorAll("entry")];
+
+  if (entries.length === 0) {
+    resultsDiv.innerHTML = "No channel videos found.";
+    return;
+  }
+
+  const channelName = xml.querySelector("author > name")?.textContent || "Channel";
+
+  resultsDiv.innerHTML = `<h3>${channelName} — Latest Uploads</h3>`;
+
+  for (const entry of entries) {
+    const videoId = entry.querySelector("id").textContent.replace("yt:video:", "");
+    const title = entry.querySelector("title").textContent;
+    const thumb = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <img src="${thumb}">
+      <div>
+        <b>${title}</b><br>
+        <small>${channelName}</small>
+      </div>
+    `;
+
+    div.addEventListener("click", () => {
+      document.getElementById("player").src =
+        "https://www.youtube.com/embed/" + videoId + "?autoplay=1";
+    });
+
+    resultsDiv.appendChild(div);
+  }
+}
 </script>
 
 </body>
 </html>
-
-
-
-
-
