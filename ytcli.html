@@ -1,8 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
+
+<!--yt client, paste into https://www.w3schools.com/html/tryit.asp?filename=tryhtml_intro-->
+
+
 <meta charset="UTF-8">
-<title>Codetabs YouTube Client</title>
+<title>ShizuTube</title>
 <style>
   body { font-family: sans-serif; margin: 20px; }
   #results img { width: 160px; border-radius: 6px; }
@@ -10,13 +14,11 @@
 </style>
 </head>
 <body>
+<center>
+<img src="https://files.catbox.moe/s9dfwf.png" width=100px">
 
-<h2>Codetabs YouTube Client (Pure Client-Side)</h2>
-
-<input id="search" placeholder="Search YouTube…" style="width: 300px;">
+<input id="search" placeholder="Search ShizuTube…" style="width: 300px;">
 <button onclick="doSearch()">Search</button>
-
-<div id="results"></div>
 
 <hr>
 
@@ -25,12 +27,16 @@
   width="640"
   height="360"
   src=""
-  title="YouTube video player"
+  title="ShizuTube video player"
   frameborder="0"
   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
   referrerpolicy="strict-origin-when-cross-origin"
   allowfullscreen>
 </iframe>
+
+<hr>
+</center>
+<div id="results"></div>
 
 <script>
 async function doSearch() {
@@ -96,4 +102,8 @@ async function doSearch() {
 
 </body>
 </html>
+
+
+
+
 
